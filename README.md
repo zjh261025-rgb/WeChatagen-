@@ -171,6 +171,21 @@ python -c "import pysilk;open('a.silk','wb').write(pysilk.encode(open('out.pcm',
 本方案只在单个客户端上验证过「发语音条」与「连发两条」；文本/文件/表情发送沿用原有实现，
 理论上不受影响，但没有做系统性的回归测试。
 
+## 依赖与来源
+
+本仓库**不包含**上游源码，只包含「发送语音条」这一层的增量。要复刻，需要先准备：
+
+| 项目 | 许可证 | 用途 | 地址 |
+|---|---|---|---|
+| `sourcepro5/WeChatAgent` | MIT | hook 宿主：覆盖层源码、构建脚本、DSH 插件 | https://github.com/sourcepro5/WeChatAgent |
+| `Derpyu520/qq-bridge` | MIT（GitHub 标记 NOASSERTION，许可证文件内容是 MIT；随 WeChatAgent vendored 为 `components/qq-bridge`） | 桥接核心：社交模拟、消息决策与投递、安全 MCP 工具 | https://github.com/Derpyu520/qq-bridge |
+| `aixed/WeChat-Hook` | **无许可证，不随本仓库分发** | hook 底座：`version.dll` 注入框架、发送调度 | https://github.com/aixed/WeChat-Hook |
+
+本项目改动的上游文件只有 4 处，全部以 patch 形式给出（见 `patches/`）；
+新增文件是 `src/voice_sender.*`、`src/voice_probe.*`、`tools/voice-send.py`。
+
+详细对应关系（每个文件用在哪、为什么不上传上游源码）见 [`docs/依赖与来源.md`](docs/依赖与来源.md)。
+
 ## 封号风险（必读）
 
 用 hook 方式跑机器人，**账号随时有被封的可能**，这是方案本身的性质：
