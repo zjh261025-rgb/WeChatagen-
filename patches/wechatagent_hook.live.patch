@@ -1,0 +1,29 @@
+--- scripts/native-hook/wechatagent_hook.cpp
++++ scripts/native-hook/wechatagent_hook.cpp
+@@ -279,23 +279,23 @@
+             res.status = 500; res.set_content("{\"ret\":1,\"error\":\"Native send failed\"}", "application/json");
+         }
+     });
+     server.Post("/SendVoiceMsg",[authorized](const httplib::Request& req,httplib::Response& res){
+         if(!authorized(req,res))return;
+         try{
+             auto accounts=DatabaseAccounts();auto account=req.get_header_value("X-WeChatAgent-Account");
+             if(CoreVersion()!="4.1.10.27"||account.empty()||accounts.size()!=1||!accounts.count(account)){
+                 res.status=409;res.set_content("{\"ret\":1,\"error\":\"Version or account mismatch\"}","application/json");return;
+             }
+-            // Dry-run does not submit work; a future live path must also take sendMutex.
+-            WeChatAgentVoice::Handle(req,res);
+-        }catch(...){res.status=500;res.set_content("{\"ret\":1,\"error\":\"Voice dry-run failed\",\"nativeCallAttempted\":false}","application/json");}
++            // Only live takes the shared lock inside Handle; dry-run stays nonblocking.
++            WeChatAgentVoice::Handle(req,res,sendMutex);
++        }catch(...){res.status=500;res.set_content("{\"ret\":1,\"error\":\"Voice handler failed\",\"nativeCallAttempted\":\"unknown\"}","application/json");}
+     });
+     // Route handlers run after the bounded request body is read. Rejecting a
+     // POST before reading its body can reset TCP and truncate the error JSON.
+     auto unknown = [authorized](const httplib::Request& req, httplib::Response& res) {
+         if (!authorized(req, res)) return;
+         res.status = 404; res.set_content("{}", "application/json");
+     };
+     server.Get(".*", unknown);
+     server.Post(".*", unknown);
+ }

@@ -1,0 +1,14 @@
+--- scripts/build-hook-local.ps1
++++ scripts/build-hook-local.ps1
+@@ -78,10 +78,10 @@
+ $dll = Join-Path $build 'x64\Release\version.dll'
+ $previousDll = Join-Path $output 'version.dll'
+ $previousManifest = Join-Path $output 'build.json'
+ if ((Test-Path -LiteralPath $previousDll) -and (Test-Path -LiteralPath $previousManifest) -and (Get-FileHash -LiteralPath $previousDll).Hash -ne (Get-FileHash -LiteralPath $dll).Hash) {
+     Copy-Item -LiteralPath $previousDll -Destination (Join-Path $output 'version.dll.previous') -Force
+     Copy-Item -LiteralPath $previousManifest -Destination (Join-Path $output 'build.previous.json') -Force
+ }
+ Copy-Item -LiteralPath $dll -Destination (Join-Path $output 'version.dll') -Force
+-@{ upstream='https://github.com/aixed/WeChat-Hook'; commit=$commit; targetVersion='4.1.10.27'; integration='WeChatAgent-1'; nativeFiles='appmsg-6-factory-v1'; initialization='deferred-module-v3'; mutexCompatibility='legacy-runtime-constructor-v1'; exceptionDiagnostics='seh-cpp-stage-v1'; logWriter='win32-srw-v1'; moduleWaitWarningMs=30000; moduleWaitTimeoutMs=0; sha256=(Get-FileHash -LiteralPath $dll -Algorithm SHA256).Hash.ToLowerInvariant() } | ConvertTo-Json | Set-Content -LiteralPath (Join-Path $output 'build.json') -Encoding UTF8
++@{ upstream='https://github.com/aixed/WeChat-Hook'; commit=$commit; targetVersion='4.1.10.27'; integration='WeChatAgent-1'; nativeFiles='appmsg-6-factory-v1'; nativeVoice='live-a-v1'; voiceDefault='dry-run'; voiceLiveGate='voice-live.enable'; initialization='deferred-module-v3'; mutexCompatibility='legacy-runtime-constructor-v1'; exceptionDiagnostics='seh-cpp-stage-v1'; logWriter='win32-srw-v1'; moduleWaitWarningMs=30000; moduleWaitTimeoutMs=0; sha256=(Get-FileHash -LiteralPath $dll -Algorithm SHA256).Hash.ToLowerInvariant() } | ConvertTo-Json | Set-Content -LiteralPath (Join-Path $output 'build.json') -Encoding UTF8
+ Write-Output ('Native sender compiled: '+(Join-Path $output 'version.dll')+' (loopback, token, account/version checks).')

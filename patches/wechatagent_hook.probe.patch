@@ -1,0 +1,38 @@
+--- scripts/native-hook/wechatagent_hook.cpp
++++ scripts/native-hook/wechatagent_hook.cpp
+@@ -13,16 +13,17 @@
+ #include <bcrypt.h>
+ #pragma comment(lib,"bcrypt.lib")
+ #include "httplib.h"
+ #include "json.hpp"
+ #include "wx_send.h"
+ #include "sticker_sender.h"
+ #include "file_sender.h"
+ #include "voice_sender.h"
++#include "voice_probe.h"
+ #include "global.h"
+ #include "wechatagent_hook.h"
+ #include "deferred_init.h"
+ 
+ using json = nlohmann::json;
+ static std::timed_mutex sendMutex;
+ 
+ static bool StickerReady() {
+@@ -162,16 +163,17 @@
+             suffix != L"session\\session.db" && suffix.rfind(L"message\\message_", 0) != 0) continue;
+         size_t previous = path.rfind(L'\\', at - 1);
+         if (previous != std::wstring::npos) accounts.insert(Utf8(path.substr(previous + 1, at - previous - 1)));
+     }
+     return accounts;
+ }
+ 
+ void RegisterWeChatAgentRoutes(httplib::Server& server) {
++    WeChatAgentVoiceProbe::Initialize();
+     WeChatAgentInitStage("http_token_read");
+     std::ifstream file(std::filesystem::path(ModulePath()).parent_path() / L"wechatagent-hook.token");
+     std::string token;
+     std::getline(file, token);
+     if (!token.empty() && token.back() == '\r') token.pop_back();
+     server.set_payload_max_length(65536);
+     auto authorized = [token](const httplib::Request& req, httplib::Response& res) {
+         std::string supplied = req.get_header_value("Authorization"), expected = "Bearer " + token;

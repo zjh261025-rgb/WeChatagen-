@@ -1,0 +1,31 @@
+--- scripts/build-hook-local.ps1
++++ scripts/build-hook-local.ps1
+@@ -48,23 +48,25 @@
+ Replace-Checked (Join-Path $build 'src\inline_weixin_dll_load.cpp') 'GetParentProcessId();' "GetParentProcessId();`n    WeChatAgentInitStage(`"parent_pid_ready`");"
+ Replace-Checked (Join-Path $build 'src\inline_weixin_dll_load.cpp') '        g_httpServer = new HttpServer();' "        WeChatAgentInitStage(`"http_wrapper_construct`");`n        g_httpServer = new HttpServer();"
+ [IO.File]::WriteAllText((Join-Path $build 'src\http_routes.cpp'),"#include `"http_routes.h`"`n#include `"wechatagent_hook.h`"`nvoid RegisterRoutes(httplib::Server& server) { RegisterWeChatAgentRoutes(server); }`n",$encoding)
+ Copy-Item -LiteralPath (Join-Path $PSScriptRoot 'native-hook\wechatagent_hook.h') -Destination (Join-Path $build 'include') -Force
+ Copy-Item -LiteralPath (Join-Path $PSScriptRoot 'native-hook\wechatagent_hook.cpp') -Destination (Join-Path $build 'src') -Force
+ Copy-Item -LiteralPath (Join-Path $PSScriptRoot 'native-hook\sticker_sender.h') -Destination (Join-Path $build 'include') -Force
+ Copy-Item -LiteralPath (Join-Path $PSScriptRoot 'native-hook\sticker_sender.cpp') -Destination (Join-Path $build 'src') -Force
+ Copy-Item -LiteralPath (Join-Path $PSScriptRoot 'native-hook\sticker_trace.cpp') -Destination (Join-Path $build 'src') -Force
+-foreach ($name in @('file_sender.h','deferred_init.h','http_server.h','voice_sender.h')) { Copy-Item -LiteralPath (Join-Path $PSScriptRoot ('native-hook\'+$name)) -Destination (Join-Path $build 'include') -Force }
+-foreach ($name in @('file_sender.cpp','deferred_init.cpp','http_server.cpp','voice_sender.cpp')) { Copy-Item -LiteralPath (Join-Path $PSScriptRoot ('native-hook\'+$name)) -Destination (Join-Path $build 'src') -Force }
++foreach ($name in @('file_sender.h','deferred_init.h','http_server.h','voice_sender.h','voice_probe.h')) { Copy-Item -LiteralPath (Join-Path $PSScriptRoot ('native-hook\'+$name)) -Destination (Join-Path $build 'include') -Force }
++foreach ($name in @('file_sender.cpp','deferred_init.cpp','http_server.cpp','voice_sender.cpp','voice_probe.cpp')) { Copy-Item -LiteralPath (Join-Path $PSScriptRoot ('native-hook\'+$name)) -Destination (Join-Path $build 'src') -Force }
++Copy-Item -LiteralPath (Join-Path $PSScriptRoot 'native-hook\voice_probe_entry.asm') -Destination (Join-Path $build 'src') -Force
+ # Runtime module/executable paths do not identify this workspace after deployment.
+ $voiceWorkspace = $root.Replace('\','\\').Replace('"','\"')
+ [IO.File]::WriteAllText((Join-Path $build 'include\voice_sender_workspace.h'),("#pragma once`ninline constexpr wchar_t kWeChatAgentVoiceWorkspace[] = L`"{0}`";`n" -f $voiceWorkspace),$encoding)
+ $project = Join-Path $build 'x64_Version_dll.vcxproj'
+-Replace-Checked $project '<ClCompile Include="src\http_routes.cpp" />' '<ClCompile Include="src\http_routes.cpp" /><ClCompile Include="src\wechatagent_hook.cpp" /><ClCompile Include="src\sticker_sender.cpp" /><ClCompile Include="src\sticker_trace.cpp" /><ClCompile Include="src\file_sender.cpp" /><ClCompile Include="src\deferred_init.cpp" /><ClCompile Include="src\voice_sender.cpp" />'
++Replace-Checked $project '<ClCompile Include="src\http_routes.cpp" />' '<ClCompile Include="src\http_routes.cpp" /><ClCompile Include="src\wechatagent_hook.cpp" /><ClCompile Include="src\sticker_sender.cpp" /><ClCompile Include="src\sticker_trace.cpp" /><ClCompile Include="src\file_sender.cpp" /><ClCompile Include="src\deferred_init.cpp" /><ClCompile Include="src\voice_sender.cpp" /><ClCompile Include="src\voice_probe.cpp" />'
++Replace-Checked $project '<MASM Include="src\cpuid.asm">' '<MASM Include="src\voice_probe_entry.asm" /><MASM Include="src\cpuid.asm">'
+ Replace-Checked $project 'psapi.lib;gdiplus.lib;' 'version.lib;psapi.lib;gdiplus.lib;'
+ Replace-Checked $project '<PreprocessorDefinitions>' '<PreprocessorDefinitions>_DISABLE_CONSTEXPR_MUTEX_CONSTRUCTOR;'
+ if (-not $MsBuild) {
+     $vswhere = Join-Path ${env:ProgramFiles(x86)} 'Microsoft Visual Studio\Installer\vswhere.exe'
+     if (-not (Test-Path -LiteralPath $vswhere)) { throw 'Install Visual Studio C++ Build Tools, or provide -MsBuild.' }
+     $MsBuild = (& $vswhere -latest -products '*' -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -find 'MSBuild\**\Bin\MSBuild.exe' | Select-Object -First 1)
+ }
+ if (-not $MsBuild) { throw 'Visual Studio C++ compiler not found.' }
